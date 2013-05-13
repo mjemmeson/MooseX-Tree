@@ -1,5 +1,9 @@
 package MooseX::Tree;
 
+# ABSTRACT: Moose Role to provide simple hierarchical tree functionality to objects
+
+# VERSION
+
 use MooseX::Role::Parameterized;
 
 our $DESCEND_ORDER = 'pre';    # default
@@ -30,6 +34,7 @@ role {
     my $pre_method   = "${descendants}_pre_order";
     my $post_method  = "${descendants}_post_order";
     my $level_method = "${descendants}_level_order";
+    my $group_method = "${descendants}_group_order";
 
     has $parent => (    #
         is  => 'rw',
@@ -69,6 +74,7 @@ role {
               $order eq 'pre'   ? $self->$pre_method
             : $order eq 'post'  ? $self->$post_method
             : $order eq 'level' ? $self->$level_method
+            : $order eq 'group' ? $self->$group_method
             :                     die "Unknown descend order: $order";
     };
 
@@ -92,107 +98,20 @@ role {
         }
         return @list;
     };
+
+    method $group_method => sub {
+        my $self = shift;
+
+        my @list;
+        my @queue = map { [ 0, $_ ] } @{ $self->$children };
+
+        while ( my ( $level, $node ) = @{ shift(@queue) || [] } ) {
+            push @{ $list[$level] }, $node;
+            push @queue, map { [ $level + 1, $_ ] } @{ $node->$children };
+        }
+        return @list;
+    };
 };
 
 1;
-
-__END__
-
-sub traverse {
-    my $self = shift;
-    my $order = shift;
-    $order = $self->PRE_ORDER unless $order;
- 
-    if ( wantarray ) {
-        my @list;
- 
-        if ( $order eq $self->PRE_ORDER ) {
-            @list = ($self);
-            push @list, map { $_->traverse( $order ) } @{$self->{_children}};
-        }
-        elsif ( $order eq $self->POST_ORDER ) {
-            @list = map { $_->traverse( $order ) } @{$self->{_children}};
-            push @list, $self;
-        }
-        elsif ( $order eq $self->LEVEL_ORDER ) {
-            my @queue = ($self);
-            while ( my $node = shift @queue ) {
-                push @list, $node;
-                push @queue, @{$node->{_children}};
-            }
-        }
-        else {
-            return $self->error( "traverse(): '$order' is an illegal traversal order" );
-        }
- 
-        return @list;
-    }
-    else {
-        my $closure;
- 
-        if ( $order eq $self->PRE_ORDER ) {
-            my $next_node = $self;
-            my @stack = ( $self );
-            my @next_idx = ( 0 );
- 
-            $closure = sub {
-                my $node = $next_node;
-                return unless $node;
-                $next_node = undef;
- 
-                while ( @stack && !$next_node ) {
-                    while ( @stack && !exists $stack[0]->{_children}[ $next_idx[0] ] ) {
-                        shift @stack;
-                        shift @next_idx;
-                    }
- 
-                    if ( @stack ) {
-                        $next_node = $stack[0]->{_children}[ $next_idx[0]++ ];
-                        unshift @stack, $next_node;
-                        unshift @next_idx, 0;
-                    }
-                }
- 
-                return $node;
-            };
-        }
-        elsif ( $order eq $self->POST_ORDER ) {
-            my @stack = ( $self );
-            my @next_idx = ( 0 );
-            while ( @{ $stack[0]->{_children} } ) {
-                unshift @stack, $stack[0]->{_children}[0];
-                unshift @next_idx, 0;
-            }
- 
-            $closure = sub {
-                my $node = $stack[0];
-                return unless $node;
- 
-                shift @stack; shift @next_idx;
-                $next_idx[0]++;
- 
-                while ( @stack && exists $stack[0]->{_children}[ $next_idx[0] ] ) {
-                    unshift @stack, $stack[0]->{_children}[ $next_idx[0] ];
-                    unshift @next_idx, 0;
-                }
- 
-                return $node;
-            };
-        }
-        elsif ( $order eq $self->LEVEL_ORDER ) {
-            my @nodes = ($self);
-            $closure = sub {
-                my $node = shift @nodes;
-                return unless $node;
-                push @nodes, @{$node->{_children}};
-                return $node;
-            };
-        }
-        else {
-            return $self->error( "traverse(): '$order' is an illegal traversal order" );
-        }
- 
-        return $closure;
-    }
-}
 

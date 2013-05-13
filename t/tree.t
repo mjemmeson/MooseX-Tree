@@ -38,6 +38,7 @@ is_deeply
     "correct descendants";
 
 my $child3 = $node->new( name => 'child 3' );
+ok $t->add_children($child3), "add_children to existing";
 
 $child1->add_children(
     $node->new( name => 'grandchild 1 A' ),
@@ -54,18 +55,61 @@ note "descendants - ordering";
 ok my @descendants_pre   = $t->descendants( order => 'pre' ),   "pre order";
 ok my @descendants_post  = $t->descendants( order => 'post' ),  "post order";
 ok my @descendants_level = $t->descendants( order => 'level' ), "level order";
+ok my @descendants_group = $t->descendants( order => 'group' ), "group order";
 
 is scalar(@descendants_pre),   7, "got 7 children and grandchildren";
 is scalar(@descendants_post),  7, "got 7 children and grandchildren";
 is scalar(@descendants_level), 7, "got 7 children and grandchildren";
+is scalar(@descendants_group), 2, "got 2 levels";
 
-#ok @descendants = $t->descendants( hierarchy => 1 ),
-#    "got descendants with hierarchy";
-#
-#is scalar(@descendants), 1, "got one layer";
-#is scalar( @{ $descendants[0] } ), 2, "got two descendants in layer";
-#is_deeply [ map { $_->name } @{ $descendants[0] } ],
-#    [ 'child 1', 'child 2' ],
-#    "correct descendants";
+is_deeply [ map { $_->name } @descendants_pre ],
+    [
+    "child 1",
+    "grandchild 1 A",
+    "grandchild 1 B",
+    "child 2",
+    "child 3",
+    "grandchild 3 A",
+    "grandchild 3 B",
+    ],
+    "pre order ok";
+
+is_deeply [ map { $_->name } @descendants_post ],
+    [
+    "grandchild 1 A",
+    "grandchild 1 B",
+    "child 1",
+    "child 2",
+    "grandchild 3 A",
+    "grandchild 3 B",
+    "child 3",
+    ],
+    "pre order ok";
+
+is_deeply [ map { $_->name } @descendants_level ],
+    [
+    "child 1",
+    "child 2",
+    "child 3",
+    "grandchild 1 A",
+    "grandchild 1 B",
+    "grandchild 3 A",
+    "grandchild 3 B",
+    ],
+    "pre order ok";
+
+is_deeply [ map { $_->name } @{ $descendants_group[0] } ],
+    [ "child 1", "child 2", "child 3", ],
+    "level 0 ok";
+
+
+is_deeply [ map { $_->name } @{ $descendants_group[1] } ],
+    [
+    "grandchild 1 A",
+    "grandchild 1 B",
+    "grandchild 3 A",
+    "grandchild 3 B",
+    ],
+    "level 1 ok";
 
 done_testing();
