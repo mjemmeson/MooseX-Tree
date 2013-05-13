@@ -113,5 +113,52 @@ role {
     };
 };
 
+=head1 SYNOPSIS
+
+    package My::Node;
+    
+    use Moose;
+    with 'MooseX::Tree';
+    
+    ... then: ...
+    
+    my $node = My::Node->new();
+    
+    my $parent      = $node->parent;
+    my @children    = $node->children;
+    my @ancestors   = $node->ancestors;
+    my @descendants = $node->descendants;
+
+=head1 DESCRIPTION
+
+Under development.
+
+Moose Role to provide simple tree functionality.
+
+=head1 METHODS
+
+Note: method names can be overridden by providing parameters when consuming
+this role.
+
+=head2 parent
+
+=head2 children
+
+=head2 ancestors
+
+=head2 descendants
+
+=head1 TODO
+
+=over
+
+=item *
+
+Document and test role parameters (to set attribute/method names)
+
+=back    
+
+=cut
+
 1;
 
